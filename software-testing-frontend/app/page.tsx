@@ -13,21 +13,6 @@ interface FileItem {
   language?: string
 }
 
-const DEMO_FILES: FileItem[] = [
-  { name: "src", type: "folder" },
-  { name: "src/components", type: "folder" },
-  { name: "src/components/App.tsx", type: "file", size: "4.2 KB", language: "TypeScript" },
-  { name: "src/components/Header.tsx", type: "file", size: "1.8 KB", language: "TypeScript" },
-  { name: "src/utils/helpers.ts", type: "file", size: "2.1 KB", language: "TypeScript" },
-  { name: "src/styles/globals.css", type: "file", size: "1.3 KB", language: "CSS" },
-  { name: "package.json", type: "file", size: "0.9 KB", language: "JSON" },
-  { name: "tsconfig.json", type: "file", size: "0.5 KB", language: "JSON" },
-  { name: "README.md", type: "file", size: "3.7 KB", language: "Markdown" },
-  { name: "server.py", type: "file", size: "6.1 KB", language: "Python" },
-  { name: "index.js", type: "file", size: "1.4 KB", language: "JavaScript" },
-  { name: ".gitignore", type: "file", size: "0.2 KB" },
-]
-
 export default function Page() {
   const router = useRouter()
   const [files, setFiles] = useState<FileItem[]>([])
@@ -35,20 +20,31 @@ export default function Page() {
   const [hasSearched, setHasSearched] = useState(false)
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null)
 
-  const handleFetch = useCallback((url: string) => {
+  const handleFetch = useCallback(async (url: string) => {
     setIsLoading(true)
     setHasSearched(true)
     setFiles([])
+    setSelectedFile(null)
 
-    // Simulate fetching files from a repository
-    setTimeout(() => {
-      if (url.includes("github.com") || url.includes("gitlab.com") || url.includes("http")) {
-        setFiles(DEMO_FILES)
-      } else {
+    try {
+      const response = await fetch("/api/repository/files", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      })
+
+      if (!response.ok) {
         setFiles([])
+        return
       }
+
+      const data = (await response.json()) as { files?: FileItem[] }
+      setFiles(data.files || [])
+    } catch {
+      setFiles([])
+    } finally {
       setIsLoading(false)
-    }, 2000)
+    }
   }, [])
 
   return (
