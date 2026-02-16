@@ -20,6 +20,13 @@ interface TestCase {
   duration: string
 }
 
+interface AnalysisApiResponse {
+  score: string
+  health: string
+  metrics: MetricResult[]
+  tests: TestCase[]
+}
+
 const STATUS_COLORS = {
   pass: "text-emerald-400",
   warn: "text-amber-400",
@@ -34,38 +41,15 @@ const STATUS_BG = {
   skip: "bg-muted border-border",
 }
 
-function generateMetrics(): MetricResult[] {
-  return [
-    { label: "Code Coverage", value: "84.2%", status: "pass", detail: "Lines covered by tests" },
-    { label: "Cyclomatic Complexity", value: "12", status: "warn", detail: "Average per function" },
-    { label: "Type Safety", value: "96.1%", status: "pass", detail: "Typed declarations" },
-    { label: "Lint Issues", value: "3", status: "warn", detail: "Warnings found" },
-    { label: "Security Vulns", value: "0", status: "pass", detail: "No vulnerabilities" },
-    { label: "Duplication", value: "2.4%", status: "pass", detail: "Duplicate code blocks" },
-  ]
-}
-
-function generateTests(): TestCase[] {
-  return [
-    { name: "renders without crashing", status: "pass", duration: "23ms" },
-    { name: "handles loading state", status: "pass", duration: "45ms" },
-    { name: "displays error on fetch failure", status: "pass", duration: "38ms" },
-    { name: "renders items from API", status: "pass", duration: "67ms" },
-    { name: "handles empty response", status: "fail", duration: "120ms" },
-    { name: "matches snapshot", status: "pass", duration: "12ms" },
-    { name: "cleans up on unmount", status: "pass", duration: "31ms" },
-    { name: "accessibility: keyboard nav", status: "skip", duration: "0ms" },
-    { name: "performance: under 100ms render", status: "pass", duration: "8ms" },
-  ]
-}
-
 export function AnalysisMetrics({ fileName, onRetry }: AnalysisMetricsProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(true)
   const [metrics, setMetrics] = useState<MetricResult[]>([])
   const [tests, setTests] = useState<TestCase[]>([])
   const [progress, setProgress] = useState(0)
+  const [score, setScore] = useState("--")
+  const [health, setHealth] = useState("Running")
 
-  const runAnalysis = useCallback(() => {
+  const runAnalysis = useCallback(async () => {
     setIsAnalyzing(true)
     setMetrics([])
     setTests([])
@@ -81,14 +65,41 @@ export function AnalysisMetrics({ fileName, onRetry }: AnalysisMetricsProps) {
       })
     }, 200)
 
-    setTimeout(() => {
+    try {
+      const response = await fetch("/api/analysis/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName }),
+      })
+
       clearInterval(progressInterval)
       setProgress(100)
-      setMetrics(generateMetrics())
-      setTests(generateTests())
+
+      if (!response.ok) {
+        setMetrics([])
+        setTests([])
+        setScore("--")
+        setHealth("Failed")
+        setIsAnalyzing(false)
+        return
+      }
+
+      const data = (await response.json()) as AnalysisApiResponse
+      setMetrics(data.metrics)
+      setTests(data.tests)
+      setScore(data.score)
+      setHealth(data.health)
+    } catch {
+      clearInterval(progressInterval)
+      setProgress(100)
+      setMetrics([])
+      setTests([])
+      setScore("--")
+      setHealth("Failed")
+    } finally {
       setIsAnalyzing(false)
-    }, 2500)
-  }, [])
+    }
+  }, [fileName])
 
   useEffect(() => {
     runAnalysis()
@@ -146,10 +157,10 @@ export function AnalysisMetrics({ fileName, onRetry }: AnalysisMetricsProps) {
             {/* Overall score */}
             <div className="flex items-center gap-4 rounded-[var(--radius)] border border-border bg-muted/30 p-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-emerald-400 bg-emerald-400/10">
-                <span className="text-lg font-bold text-emerald-400">B+</span>
+                <span className="text-lg font-bold text-emerald-400">{score}</span>
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">Overall Health: Good</p>
+                <p className="text-sm font-semibold text-foreground">Overall Health: {health}</p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   {passCount} passed, {failCount} failed, {skipCount} skipped of {tests.length} tests
                 </p>
