@@ -19,12 +19,14 @@ export default function Page() {
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null)
+  const [repoUrl, setRepoUrl] = useState("")
 
   const handleFetch = useCallback(async (url: string) => {
     setIsLoading(true)
     setHasSearched(true)
     setFiles([])
     setSelectedFile(null)
+    setRepoUrl(url)
 
     try {
       const response = await fetch("/api/repository/files", {
@@ -129,6 +131,7 @@ export default function Page() {
             files={files}
             isLoading={isLoading}
             hasSearched={hasSearched}
+            repoUrl={repoUrl}
             onSelectFile={(file) => setSelectedFile(file)}
           />
         </section>
@@ -151,6 +154,7 @@ export default function Page() {
                 } else {
                   params.set("file", "all")
                 }
+                if (repoUrl) params.set("repo", repoUrl)
                 router.push(`/analysis?${params.toString()}`)
               }}
               className="group flex items-center gap-2.5 rounded-[var(--radius)] border border-[hsl(var(--primary))] bg-[hsl(var(--primary))] px-6 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition-all hover:opacity-90"
