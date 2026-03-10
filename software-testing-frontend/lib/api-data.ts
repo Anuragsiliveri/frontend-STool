@@ -75,7 +75,9 @@ const fallbackAnalysis: AnalysisResponse = {
 export function isSupportedRepoUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
-    return ["github.com", "gitlab.com", "bitbucket.org"].some((host) => parsed.hostname.includes(host))
+    return ["github.com", "gitlab.com", "bitbucket.org"].some(
+      (host) => parsed.hostname === host || parsed.hostname === `www.${host}`,
+    )
   } catch {
     return false
   }
@@ -87,6 +89,50 @@ export function getRepositoryFiles(url: string): FileItem[] {
   }
 
   return REPO_FILES
+}
+
+export function getLanguageFromExtension(filename: string): string | undefined {
+  const ext = filename.split(".").pop()?.toLowerCase()
+  const map: Record<string, string> = {
+    ts: "TypeScript", tsx: "TypeScript",
+    js: "JavaScript", jsx: "JavaScript", mjs: "JavaScript", cjs: "JavaScript",
+    py: "Python",
+    css: "CSS", scss: "CSS", sass: "CSS",
+    json: "JSON",
+    md: "Markdown", mdx: "Markdown",
+    html: "HTML", htm: "HTML",
+    java: "Java",
+    kt: "Kotlin", kts: "Kotlin",
+    go: "Go",
+    rs: "Rust",
+    rb: "Ruby",
+    php: "PHP",
+    swift: "Swift",
+    c: "C", h: "C",
+    cpp: "C++", cc: "C++", cxx: "C++", hpp: "C++",
+    cs: "C#",
+    sh: "Shell", bash: "Shell", zsh: "Shell",
+    yml: "YAML", yaml: "YAML",
+    xml: "XML",
+    sql: "SQL",
+    graphql: "GraphQL", gql: "GraphQL",
+    vue: "Vue", svelte: "Svelte",
+    dart: "Dart",
+    r: "R",
+    scala: "Scala",
+    ex: "Elixir", exs: "Elixir",
+    tf: "Terraform", hcl: "Terraform",
+    toml: "TOML",
+    ini: "INI", cfg: "INI",
+  }
+  return ext ? map[ext] : undefined
+}
+
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`
 }
 
 export function buildAnalysis(fileName: string): AnalysisResponse {
