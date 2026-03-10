@@ -13,6 +13,7 @@ interface FileExplorerProps {
   files: FileItem[]
   isLoading: boolean
   hasSearched: boolean
+  repoUrl?: string
   onSelectFile?: (file: FileItem) => void
 }
 
@@ -61,7 +62,7 @@ function getFileIcon(file: FileItem) {
   )
 }
 
-export function FileExplorer({ files, isLoading, hasSearched, onSelectFile }: FileExplorerProps) {
+export function FileExplorer({ files, isLoading, hasSearched, repoUrl, onSelectFile }: FileExplorerProps) {
   const router = useRouter()
 
   function handleFileClick(file: FileItem) {
@@ -69,7 +70,11 @@ export function FileExplorer({ files, isLoading, hasSearched, onSelectFile }: Fi
     if (onSelectFile) {
       onSelectFile(file)
     }
-    router.push(`/analysis?file=${encodeURIComponent(file.name)}&lang=${encodeURIComponent(file.language || "")}`)
+    const params = new URLSearchParams()
+    params.set("file", file.name)
+    params.set("lang", file.language || "")
+    if (repoUrl) params.set("repo", repoUrl)
+    router.push(`/analysis?${params.toString()}`)
   }
   return (
     <div className="flex min-h-[480px] flex-col rounded-[var(--radius)] border border-border bg-card">

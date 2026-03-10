@@ -16,6 +16,7 @@ function AnalysisContent() {
   const router = useRouter()
   const fileName = searchParams.get("file") || "unknown"
   const language = searchParams.get("lang") || ""
+  const repoUrl = searchParams.get("repo") || ""
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -93,7 +94,7 @@ function AnalysisContent() {
         <ResizablePanelGroup direction="horizontal">
           {/* Left panel: Code preview */}
           <ResizablePanel defaultSize={55} minSize={30}>
-            <CodePreview fileName={fileName} language={language} />
+            <CodePreview fileName={fileName} language={language} repoUrl={repoUrl} />
           </ResizablePanel>
 
           <ResizableHandle withHandle />
