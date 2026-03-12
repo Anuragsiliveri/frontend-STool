@@ -80,9 +80,13 @@ export default function Page() {
               <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
                 History
               </a>
-              <a href="#" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
+              <button
+                type="button"
+                onClick={() => router.push("/docs")}
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+              >
                 Docs
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() => router.push("/train")}

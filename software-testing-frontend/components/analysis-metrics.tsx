@@ -341,7 +341,7 @@ export function AnalysisMetrics({ fileName, language = "", code = "", onRetry }:
             <polyline points="23 4 23 10 17 10" />
             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
           </svg>
-          {isAnalyzing ? "Analyzing…" : "Re-run ML Analysis"}
+          {isAnalyzing ? "Analyzing…" : isMLMode ? "Re-run ML Analysis" : "Retry Test Analysis"}
         </button>
       </div>
     </div>

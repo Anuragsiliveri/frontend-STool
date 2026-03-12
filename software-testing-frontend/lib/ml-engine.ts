@@ -298,23 +298,6 @@ function extractCoverageEstimate(code: string): number {
   return Math.min(95, Math.max(15, score))
 }
 
-/** Calculate comment density 0-100. */
-function extractCommentDensity(code: string): number {
-  const lines = code.split("\n")
-  const commentLines = lines.filter((l) => {
-    const t = l.trim()
-    return (
-      t.startsWith("//") ||
-      t.startsWith("*") ||
-      t.startsWith("/*") ||
-      t.startsWith("#")
-    )
-  })
-  return lines.length === 0
-    ? 0
-    : Math.round((commentLines.length / lines.length) * 100)
-}
-
 // ============================================================
 // Scoring (Model Inference)
 //
@@ -629,7 +612,6 @@ export function evaluateCode(
   const securityIssues = extractSecurityIssues(code)
   const lintIssues = extractLintIssues(code)
   const coverageEstimate = extractCoverageEstimate(code)
-  const commentDensity = extractCommentDensity(code)
 
   // --- Scoring (Model Inference) ---
   const complexityResult = scoreComplexity(complexity)
@@ -658,9 +640,6 @@ export function evaluateCode(
 
   // --- Test Case Prediction ---
   const tests = generateTestCases(code, securityIssues, lintIssues, complexity)
-
-  // Unused but extracted — could be exposed in future
-  void commentDensity
 
   return {
     score: toGrade(overallScore),

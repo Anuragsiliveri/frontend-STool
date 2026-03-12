@@ -231,6 +231,48 @@ export default function TrainPage() {
               </p>
             </div>
 
+            {/* Model info + download training data */}
+            <section className="flex flex-col gap-3 rounded-[var(--radius)] border border-violet-500/20 bg-violet-500/5 p-5 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-500/15">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-4.5 w-4.5 text-violet-400">
+                    <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-violet-300">Code Quality ML Engine</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    6 features · weighted scoring · in-browser inference · 100 training samples
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 md:shrink-0">
+                <a
+                  href="/training-data.csv"
+                  download="training-data.csv"
+                  className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-violet-500/30 bg-violet-500/10 px-3 py-2 text-xs font-semibold text-violet-400 transition-all hover:bg-violet-500/20"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  Training Data
+                </a>
+                <button
+                  type="button"
+                  onClick={() => router.push("/docs")}
+                  className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground transition-all hover:border-[hsl(var(--primary)/0.4)] hover:text-foreground"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v-4M12 8h.01" />
+                  </svg>
+                  Model Docs
+                </button>
+              </div>
+            </section>
+
             {/* Step 1: Metrics */}
             <section>
               <div className="mb-4 flex items-center gap-3">
