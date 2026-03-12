@@ -83,6 +83,18 @@ export function isSupportedRepoUrl(url: string): boolean {
   }
 }
 
+/**
+ * Throws a human-readable error when a GitHub API response indicates rate limiting.
+ * Call this before throwing the generic API error so callers see a clear message.
+ */
+export function throwIfGitHubRateLimited(status: number, rateLimitRemaining: string | null, body: string): void {
+  if ((status === 403 || status === 429) && (rateLimitRemaining === "0" || body.includes("rate limit"))) {
+    throw new Error(
+      "GitHub API rate limit exceeded. Set the GITHUB_TOKEN environment variable to increase the limit from 60 to 5,000 requests per hour. See .env.example for details.",
+    )
+  }
+}
+
 export function getRepositoryFiles(url: string): FileItem[] {
   if (!isSupportedRepoUrl(url)) {
     return []

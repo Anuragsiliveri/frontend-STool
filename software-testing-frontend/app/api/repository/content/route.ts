@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { throwIfGitHubRateLimited } from "@/lib/api-data"
 
 interface ContentRequestBody {
   repoUrl?: string
@@ -51,11 +52,12 @@ async function fetchGitHubFileContent(owner: string, repo: string, filePath: str
   const encodedPath = filePath.split("/").map(encodeURIComponent).join("/")
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}`,
-    { headers },
+    { headers, next: { revalidate: 300 } },
   )
 
   if (!res.ok) {
     const errorBody = await res.text()
+    throwIfGitHubRateLimited(res.status, res.headers.get("x-ratelimit-remaining"), errorBody)
     throw new Error(`GitHub API error ${res.status}: ${errorBody}`)
   }
 
