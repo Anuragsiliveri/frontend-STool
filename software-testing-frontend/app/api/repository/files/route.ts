@@ -161,7 +161,10 @@ export async function POST(request: Request) {
   }
 
   if (!isSupportedRepoUrl(url)) {
-    return NextResponse.json({ files: [], message: "Unsupported repository host." }, { status: 200 })
+    return NextResponse.json(
+      { files: [], error: "Unsupported repository host. Only GitHub and GitLab URLs are supported." },
+      { status: 400 },
+    )
   }
 
   try {
@@ -177,7 +180,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ files })
     }
 
-    return NextResponse.json({ files: [], message: "Could not parse repository URL." }, { status: 200 })
+    return NextResponse.json({ files: [], error: "Could not parse repository URL." }, { status: 400 })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Failed to fetch repository files."
     return NextResponse.json({ error: message }, { status: 502 })

@@ -24,6 +24,30 @@ export function CodePreview({ fileName, language, repoUrl, onCodeLoad }: CodePre
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // Local files uploaded directly from the user's PC
+    if (repoUrl === "__local__") {
+      if (!fileName || fileName === "all") {
+        setCode(DEFAULT_CODE)
+        setError(null)
+        onCodeLoad?.(DEFAULT_CODE)
+        return
+      }
+      const stored =
+        typeof sessionStorage !== "undefined"
+          ? sessionStorage.getItem(`localFile:${fileName}`)
+          : null
+      if (stored !== null) {
+        setCode(stored)
+        setError(null)
+        onCodeLoad?.(stored)
+      } else {
+        setCode(DEFAULT_CODE)
+        setError("Local file content is no longer available. Please upload the file again.")
+        onCodeLoad?.(DEFAULT_CODE)
+      }
+      return
+    }
+
     if (!repoUrl || !fileName || fileName === "all") {
       setCode(DEFAULT_CODE)
       setError(null)
