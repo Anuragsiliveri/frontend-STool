@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { isSupportedRepoUrl, getLanguageFromExtension, formatFileSize } from "@/lib/api-data"
+import { isSupportedRepoUrl, getLanguageFromExtension, formatFileSize, throwIfGitHubRateLimited } from "@/lib/api-data"
 import type { FileItem } from "@/lib/api-data"
 
 interface RepositoryRequestBody {
@@ -83,11 +83,12 @@ async function fetchGitHubFiles(owner: string, repo: string): Promise<FileItem[]
 
   const res = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`,
-    { headers },
+    { headers, next: { revalidate: 300 } },
   )
 
   if (!res.ok) {
     const errorBody = await res.text()
+    throwIfGitHubRateLimited(res.status, res.headers.get("x-ratelimit-remaining"), errorBody)
     throw new Error(`GitHub API error ${res.status}: ${errorBody}`)
   }
 
