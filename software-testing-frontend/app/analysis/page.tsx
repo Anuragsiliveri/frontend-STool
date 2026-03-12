@@ -78,7 +78,7 @@ function AnalysisContent() {
                 <polyline points="9 18 15 12 9 6" />
               </svg>
               <span className="rounded bg-secondary px-2 py-0.5 font-mono text-xs text-muted-foreground">
-                {fileName}
+                {fileName === "all" ? "Entire Project" : fileName}
               </span>
             </div>
           </div>

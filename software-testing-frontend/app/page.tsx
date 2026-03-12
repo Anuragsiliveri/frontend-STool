@@ -54,6 +54,12 @@ export default function Page() {
 
       if (data.files && data.files.length > 0) {
         setFiles(data.files)
+        try {
+          sessionStorage.setItem("__projectFiles__", JSON.stringify(data.files))
+          sessionStorage.setItem("__projectRepoUrl__", url)
+        } catch {
+          // sessionStorage quota exceeded – project-level analysis will re-fetch
+        }
       } else {
         setFetchError(data.error ?? "No files found in this repository.")
         setFiles([])
@@ -272,60 +278,88 @@ export default function Page() {
             isLoading={isLoading}
             hasSearched={hasSearched}
             repoUrl={repoUrl}
+            selectedFileName={selectedFile?.name}
             onSelectFile={(file) => setSelectedFile(file)}
           />
         </section>
 
-        {/* Analyze button */}
+        {/* Action bar */}
         {files.length > 0 && (
-          <section className="mt-6 flex items-center justify-between">
+          <section className="mt-6 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
               {selectedFile
                 ? <><span className="text-foreground">Selected:</span> <span className="font-mono text-foreground">{selectedFile.name}</span></>
-                : "Click a file above to select it, or analyze the entire repository."}
+                : "Click a file above to select it, or analyze the entire project."}
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                const params = new URLSearchParams()
-                if (selectedFile) {
-                  params.set("file", selectedFile.name)
-                  params.set("lang", selectedFile.language || "")
-                } else {
+            <div className="flex items-center gap-3">
+              {/* Analyze selected file */}
+              {selectedFile && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const params = new URLSearchParams()
+                    params.set("file", selectedFile.name)
+                    params.set("lang", selectedFile.language || "")
+                    if (repoUrl) params.set("repo", repoUrl)
+                    router.push(`/analysis?${params.toString()}`)
+                  }}
+                  className="group flex items-center gap-2 rounded-[var(--radius)] border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition-all hover:border-[hsl(var(--primary)/0.5)] hover:bg-accent"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4 text-muted-foreground"
+                  >
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  Analyze File
+                </button>
+              )}
+              {/* Analyze entire project */}
+              <button
+                type="button"
+                onClick={() => {
+                  const params = new URLSearchParams()
                   params.set("file", "all")
-                }
-                if (repoUrl) params.set("repo", repoUrl)
-                router.push(`/analysis?${params.toString()}`)
-              }}
-              className="group flex items-center gap-2.5 rounded-[var(--radius)] border border-[hsl(var(--primary))] bg-[hsl(var(--primary))] px-6 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition-all hover:opacity-90"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                  if (repoUrl) params.set("repo", repoUrl)
+                  router.push(`/analysis?${params.toString()}`)
+                }}
+                className="group flex items-center gap-2.5 rounded-[var(--radius)] border border-[hsl(var(--primary))] bg-[hsl(var(--primary))] px-6 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition-all hover:opacity-90"
               >
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-              </svg>
-              Run Analysis
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4 transition-transform group-hover:translate-x-1"
-              >
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
+                >
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                Analyze Entire Project
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4 transition-transform group-hover:translate-x-1"
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+              </button>
+            </div>
           </section>
         )}
 

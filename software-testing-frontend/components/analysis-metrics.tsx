@@ -185,7 +185,9 @@ export function AnalysisMetrics({ fileName, language = "", code = "", onRetry }:
             </span>
           )}
         </div>
-        <span className="font-mono text-[11px] text-muted-foreground">{fileName}</span>
+        <span className="font-mono text-[11px] text-muted-foreground">
+          {fileName === "all" ? "Entire Project" : fileName}
+        </span>
       </div>
 
       {/* Content */}
