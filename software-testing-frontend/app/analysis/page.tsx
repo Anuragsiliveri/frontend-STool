@@ -1,6 +1,6 @@
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { CodePreview } from "@/components/code-preview"
@@ -17,6 +17,9 @@ function AnalysisContent() {
   const fileName = searchParams.get("file") || "unknown"
   const language = searchParams.get("lang") || ""
   const repoUrl = searchParams.get("repo") || ""
+
+  // Lifted state: code content shared between CodePreview and AnalysisMetrics
+  const [loadedCode, setLoadedCode] = useState<string>("")
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -94,7 +97,12 @@ function AnalysisContent() {
         <ResizablePanelGroup direction="horizontal">
           {/* Left panel: Code preview */}
           <ResizablePanel defaultSize={55} minSize={30}>
-            <CodePreview fileName={fileName} language={language} repoUrl={repoUrl} />
+            <CodePreview
+              fileName={fileName}
+              language={language}
+              repoUrl={repoUrl}
+              onCodeLoad={setLoadedCode}
+            />
           </ResizablePanel>
 
           <ResizableHandle withHandle />
@@ -103,6 +111,8 @@ function AnalysisContent() {
           <ResizablePanel defaultSize={45} minSize={25}>
             <AnalysisMetrics
               fileName={fileName}
+              language={language}
+              code={loadedCode}
               onRetry={() => {}}
             />
           </ResizablePanel>

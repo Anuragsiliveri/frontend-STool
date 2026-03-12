@@ -6,6 +6,8 @@ interface CodePreviewProps {
   fileName: string
   language: string
   repoUrl?: string
+  /** Called whenever the displayed code changes (loaded or reset to default). */
+  onCodeLoad?: (code: string) => void
 }
 
 const DEFAULT_CODE = `// File contents loaded for analysis
@@ -16,7 +18,7 @@ export function placeholder() {
   return null;
 }`
 
-export function CodePreview({ fileName, language, repoUrl }: CodePreviewProps) {
+export function CodePreview({ fileName, language, repoUrl, onCodeLoad }: CodePreviewProps) {
   const [code, setCode] = useState<string>(DEFAULT_CODE)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +27,7 @@ export function CodePreview({ fileName, language, repoUrl }: CodePreviewProps) {
     if (!repoUrl || !fileName || fileName === "all") {
       setCode(DEFAULT_CODE)
       setError(null)
+      onCodeLoad?.(DEFAULT_CODE)
       return
     }
 
@@ -47,6 +50,7 @@ export function CodePreview({ fileName, language, repoUrl }: CodePreviewProps) {
       .then((text) => {
         if (!cancelled) {
           setCode(text)
+          onCodeLoad?.(text)
           setIsLoading(false)
         }
       })
@@ -60,6 +64,7 @@ export function CodePreview({ fileName, language, repoUrl }: CodePreviewProps) {
               : "Failed to load file."
           setError(message)
           setCode(DEFAULT_CODE)
+          onCodeLoad?.(DEFAULT_CODE)
           setIsLoading(false)
         }
       })
