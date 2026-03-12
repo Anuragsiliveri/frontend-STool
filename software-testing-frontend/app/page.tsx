@@ -1,10 +1,11 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UrlFetchBar } from "@/components/url-fetch-bar"
 import { FileExplorer } from "@/components/file-explorer"
+import { getLanguageFromExtension, formatFileSize } from "@/lib/api-data"
 
 interface FileItem {
   name: string
@@ -13,6 +14,8 @@ interface FileItem {
   language?: string
 }
 
+const LOCAL_REPO_KEY = "__local__"
+
 export default function Page() {
   const router = useRouter()
   const [files, setFiles] = useState<FileItem[]>([])
@@ -20,6 +23,11 @@ export default function Page() {
   const [hasSearched, setHasSearched] = useState(false)
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null)
   const [repoUrl, setRepoUrl] = useState("")
+  const [fetchError, setFetchError] = useState<string | null>(null)
+
+  // Local file upload state
+  const [isDragging, setIsDragging] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFetch = useCallback(async (url: string) => {
     setIsLoading(true)
@@ -27,6 +35,7 @@ export default function Page() {
     setFiles([])
     setSelectedFile(null)
     setRepoUrl(url)
+    setFetchError(null)
 
     try {
       const response = await fetch("/api/repository/files", {
@@ -35,18 +44,81 @@ export default function Page() {
         body: JSON.stringify({ url }),
       })
 
+      const data = (await response.json()) as { files?: FileItem[]; error?: string }
+
       if (!response.ok) {
+        setFetchError(data.error ?? "Failed to fetch repository files.")
         setFiles([])
         return
       }
 
-      const data = (await response.json()) as { files?: FileItem[] }
-      setFiles(data.files || [])
+      if (data.files && data.files.length > 0) {
+        setFiles(data.files)
+      } else {
+        setFetchError(data.error ?? "No files found in this repository.")
+        setFiles([])
+      }
     } catch {
+      setFetchError("Network error: could not reach the server. Please check your connection.")
       setFiles([])
     } finally {
       setIsLoading(false)
     }
+  }, [])
+
+  const handleLocalFiles = useCallback((fileList: FileList) => {
+    const newFileItems: FileItem[] = []
+
+    Array.from(fileList).forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const content = e.target?.result as string
+        try {
+          sessionStorage.setItem(`localFile:${file.name}`, content)
+        } catch {
+          // sessionStorage quota exceeded – show a warning to the user
+          setFetchError("Storage quota exceeded. Some file contents may not be available for analysis.")
+        }
+      }
+      reader.readAsText(file)
+
+      newFileItems.push({
+        name: file.name,
+        type: "file",
+        size: formatFileSize(file.size),
+        language: getLanguageFromExtension(file.name),
+      })
+    })
+
+    setFiles((prev) => {
+      // Avoid duplicates by name
+      const existingNames = new Set(prev.map((f) => f.name))
+      const unique = newFileItems.filter((f) => !existingNames.has(f.name))
+      return [...prev, ...unique]
+    })
+    setHasSearched(true)
+    setFetchError(null)
+    if (repoUrl !== LOCAL_REPO_KEY) {
+      setRepoUrl(LOCAL_REPO_KEY)
+    }
+  }, [repoUrl])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    if (e.dataTransfer.files.length) {
+      handleLocalFiles(e.dataTransfer.files)
+    }
+  }, [handleLocalFiles])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
   }, [])
 
   return (
@@ -120,13 +192,77 @@ export default function Page() {
             Test Your Software
           </h2>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground leading-relaxed">
-            Paste a repository URL to fetch the source code, then analyze and run automated tests across your entire codebase.
+            Paste a GitHub or GitLab repository URL to fetch source files, or upload files directly from your computer.
           </p>
         </section>
 
         {/* URL Fetch Bar */}
+        <section className="mb-4">
+          <UrlFetchBar onFetch={handleFetch} isLoading={isLoading} error={fetchError} />
+        </section>
+
+        {/* Divider */}
+        <div className="mb-4 flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs font-medium text-muted-foreground">OR</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        {/* Local file upload */}
         <section className="mb-8">
-          <UrlFetchBar onFetch={handleFetch} isLoading={isLoading} />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            className={`flex w-full flex-col items-center gap-3 rounded-[var(--radius)] border-2 border-dashed px-6 py-6 transition-all ${
+              isDragging
+                ? "border-[hsl(var(--primary))] bg-[hsl(var(--primary)/0.04)]"
+                : "border-border bg-card hover:border-muted-foreground/40 hover:bg-accent/30"
+            }`}
+          >
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                isDragging ? "bg-[hsl(var(--primary)/0.1)]" : "bg-muted"
+              }`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.5}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className={`h-5 w-5 ${isDragging ? "text-[hsl(var(--primary))]" : "text-muted-foreground"}`}
+              >
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-medium text-foreground">
+                Drop files here or{" "}
+                <span className="text-[hsl(var(--primary))]">browse from your computer</span>
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Supports .py, .ts, .tsx, .js, .jsx, .java, .cpp, .go, .rs, .rb, .php, .swift, .kt, .cs, .json, .html, .css, and more
+              </p>
+            </div>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".py,.ts,.tsx,.js,.jsx,.java,.cpp,.c,.h,.go,.rs,.rb,.php,.swift,.kt,.cs,.json,.html,.css,.scss,.md,.yaml,.yml,.xml,.sql,.sh,.txt"
+            onChange={(e) => {
+              if (e.target.files?.length) handleLocalFiles(e.target.files)
+              e.target.value = ""
+            }}
+            className="hidden"
+          />
         </section>
 
         {/* File Explorer */}
@@ -145,7 +281,7 @@ export default function Page() {
           <section className="mt-6 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
               {selectedFile
-                ? <>Selected: <span className="font-mono text-foreground">{selectedFile.name}</span></>
+                ? <><span className="text-foreground">Selected:</span> <span className="font-mono text-foreground">{selectedFile.name}</span></>
                 : "Click a file above to select it, or analyze the entire repository."}
             </p>
             <button
@@ -200,7 +336,27 @@ export default function Page() {
               { label: "Total Files", value: files.filter((f) => f.type === "file").length.toString() },
               { label: "Folders", value: files.filter((f) => f.type === "folder").length.toString() },
               { label: "Languages", value: new Set(files.map((f) => f.language).filter(Boolean)).size.toString() },
-              { label: "Total Size", value: "22.2 KB" },
+              {
+                label: "Total Size",
+                value: (() => {
+                  const total = files.reduce((acc, f) => {
+                    if (!f.size) return acc
+                    const match = f.size.match(/([\d.]+)\s*(B|KB|MB|GB)/)
+                    if (!match) return acc
+                    const num = parseFloat(match[1])
+                    const unit = match[2]
+                    const bytes =
+                      unit === "B" ? num :
+                      unit === "KB" ? num * 1024 :
+                      unit === "MB" ? num * 1024 * 1024 :
+                      num * 1024 * 1024 * 1024
+                    return acc + bytes
+                  }, 0)
+                  if (total < 1024) return `${total.toFixed(0)} B`
+                  if (total < 1024 * 1024) return `${(total / 1024).toFixed(1)} KB`
+                  return `${(total / (1024 * 1024)).toFixed(1)} MB`
+                })(),
+              },
             ].map((stat) => (
               <div
                 key={stat.label}
