@@ -1,7 +1,5 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-
 interface FileItem {
   name: string
   type: "file" | "folder"
@@ -14,6 +12,7 @@ interface FileExplorerProps {
   isLoading: boolean
   hasSearched: boolean
   repoUrl?: string
+  selectedFileName?: string
   onSelectFile?: (file: FileItem) => void
 }
 
@@ -62,19 +61,12 @@ function getFileIcon(file: FileItem) {
   )
 }
 
-export function FileExplorer({ files, isLoading, hasSearched, repoUrl, onSelectFile }: FileExplorerProps) {
-  const router = useRouter()
-
+export function FileExplorer({ files, isLoading, hasSearched, repoUrl, selectedFileName, onSelectFile }: FileExplorerProps) {
   function handleFileClick(file: FileItem) {
     if (file.type === "folder") return
     if (onSelectFile) {
       onSelectFile(file)
     }
-    const params = new URLSearchParams()
-    params.set("file", file.name)
-    params.set("lang", file.language || "")
-    if (repoUrl) params.set("repo", repoUrl)
-    router.push(`/analysis?${params.toString()}`)
   }
   return (
     <div className="flex min-h-[480px] flex-col rounded-[var(--radius)] border border-border bg-card">
@@ -118,7 +110,13 @@ export function FileExplorer({ files, isLoading, hasSearched, repoUrl, onSelectF
                 <button
                   type="button"
                   onClick={() => handleFileClick(file)}
-                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${file.type === "file" ? "cursor-pointer hover:bg-accent hover:ring-1 hover:ring-primary/20" : "cursor-default hover:bg-accent"}`}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                    file.type === "file"
+                      ? selectedFileName === file.name
+                        ? "bg-accent ring-1 ring-primary/30 cursor-pointer"
+                        : "cursor-pointer hover:bg-accent hover:ring-1 hover:ring-primary/20"
+                      : "cursor-default hover:bg-accent"
+                  }`}
                 >
                   {getFileIcon(file)}
                   <span className="flex-1 truncate font-mono text-sm text-foreground">{file.name}</span>
